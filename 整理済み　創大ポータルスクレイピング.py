@@ -7,31 +7,13 @@ from oauth2client.service_account import ServiceAccountCredentials
 import requests
 import smtplib, ssl
 from email.mime.text import MIMEText
-import chromedriver_binary
 
 
 def scraping():
     # 空のデータフレームを定義
     dfs = pd.DataFrame(index=[], columns=['タイトル', '対象', '掲示期間', '発信元', 'サブタイトル', '本文'])
-    title = browser.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[2]')
-    if title.text[:4] == 'タイトル':
-        r = 2
 
-    else:
-        r = 3
-
-    for a in range(100):
-        soup_a = 'soup_' + str(a)
-        tables_a = 'tables_' + str(a)
-        dfs_a = 'dfs_' + str(a)
-        subtitle_list_a = 'subtitle_list_' + str(a)
-        subject_list_a = 'subject_list_' + str(a)
-        subtitle_a = 'subtitle_' + str(a)
-        subject_a = 'subject_' + str(a)
-        subtitle_series_a = 'subtitle_series_' + str(a)
-        subject_series_a = 'subject_series_' + str(a)
-
-
+    while True:
         soup_a= BeautifulSoup(browser.page_source, 'html.parser')
         tables_a = soup_a.find_all('table')
         dfs_a = pd.read_html(str(tables_a))[0]
@@ -43,17 +25,23 @@ def scraping():
         # 中身の情報を取得
         subtitle_list_a = []
         subject_list_a = []
-        for i in range(len(dfs_a) + 1):
+        for i in range(100):
             try:
-                browser.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[' + str(r) + ']/table/tbody/tr[' + str(i + 1) + ']/td[1]/a').click()
-                time.sleep(2)
+                #タイトルをクリック
+                table = browser.find_element_by_tag_name('table')
+                a_tag = table.find_elements_by_tag_name('a')
+                a_tag[i].click()
                 subtitle_a = browser.find_element_by_xpath('//*[@id="content"]/div/table/tbody/tr[3]/td[2]/span')
                 subtitle_list_a.append(subtitle_a.text)
                 subject_a = browser.find_element_by_css_selector('table')
                 subject_list_a.append(subject_a.text)
-                browser.find_element_by_xpath('//*[@id="content"]/div/p/input[1]').click()
+
+                 #一覧へ戻る
+                input = browser.find_elements_by_tag_name('input')
+                input[-2].click()
+
             except:
-                pass
+                break
         # listをseriesにする
         subtitle_series_a = pd.Series(subtitle_list_a)
         subject_series_a = pd.Series(subject_list_a)
@@ -66,13 +54,10 @@ def scraping():
         dfs_a['本文'] = subject_series_a
         dfs = pd.concat([dfs,dfs_a], ignore_index= True)
 
-        next = browser.find_element_by_xpath('//*[@id="content"]/div/div[2]/div[2]')
-
-        if next.text[-5:] == 'next≫':
+        try:
             browser.find_element_by_link_text('next≫').click()
-            time.sleep(2)
 
-        else:
+        except:
             break
     return dfs
     time.sleep(2)
@@ -155,23 +140,21 @@ time.sleep(1)
 browser.find_element_by_name('Submit').click()
 time.sleep(1)
 browser.find_element_by_xpath('//*[@id="content"]/div/div[4]/div[2]/div/a').click()
-time.sleep(2)
+time.sleep(1)
 
 dfs_jugyou = scraping()
 
 #学生生活・その他へ
+tab_label = browser.find_elements_by_class_name('tab-label')
+tab_label[1].click()
 time.sleep(1)
-browser.find_element_by_xpath('//*[@id="content"]/div/div[3]/input').click()
-browser.find_element_by_xpath('//*[@id="content"]/div/div[5]/div[2]/div/a').click()
-time.sleep(2)
 
 dfs_seikatu = scraping()
 
 #キャリア・教職・資格等へ
+tab_label = browser.find_elements_by_class_name('tab-label')
+tab_label[2].click()
 time.sleep(1)
-browser.find_element_by_xpath('//*[@id="content"]/div/div[3]/input').click()
-browser.find_element_by_xpath('//*[@id="content"]/div/div[6]/div[2]/div/a').click()
-time.sleep(2)
 
 dfs_career = scraping()
 
